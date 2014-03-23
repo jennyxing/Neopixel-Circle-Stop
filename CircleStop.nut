@@ -111,7 +111,7 @@ pixelStrip <- NeoPixels(spi, NUMPIXELS);
 pixels <- [0, 0, 0, 0]
 currentPixel <- 0;
 local score=0;
-local timesMissed=-5;
+local timesMissed=0;
 
 function generateRandomPixel() {
   return math.rand() % (NUMPIXELS);
@@ -120,27 +120,56 @@ function generateRandomPixel() {
 local randomPixel = generateRandomPixel();
 //server.log("the random pixel is " + randomPixel)
 
-function movePlayer(d = null) {
- /* if (currentPixel == randomPixel) {
-    testCollision();
-  } else {
-    pixelStrip.writePixel(randomPixel, [20, 20, 0]);
+//detects for collision when button is pressed when player hits random pixel
+function testCollision() {
+
+  if (currentPixel == randomPixel) {
+    local state = button.read();
+    if (state == 1) {
+      return false;
+    } else {
+      // when the button is pressed
+      randomPixel = generateRandomPixel();
+      pixelStrip.writePixel(randomPixel, [20, 20, 0]);
+      score++;
+      timesMissed--;
+      server.log("Score: " + score + "  Missed: " + timesMissed)
+      return true;
+    }
   }
-  */
+
+}
+function movePlayer(d = null) {
+
+  //doesn't work properly, but flashes the pixels when the player reaches 5 points which is a good animation for winning
+  if (score > 0 && score % 5 == 0) {
+    DELAY = DELAY * 0.9;
+    //  server.log("level up!");
+  }
+
+  local state = button.read();
 
   pixelStrip.writePixel(randomPixel, [20, 20, 0]);
   pixelStrip.writePixel(pixels[0], [0, 0, 0]);
-
   testCollision();
 
-//problem: goes on indefinitely :()
-  if (score> 0 && score % 5 == 0){
-    DELAY = DELAY * 0.75;
-    server.log("level up! ")
+  if (state == 0) {
+    if (!testCollision()) {
+      timesMissed++;
+      server.log("Score: " + score + "  Missed: " + timesMissed);
     }
-    if (timesMissed==4){
-        server.log("game over!")
+
+  }
+
+  if (timesMissed == 4) {
+    server.log("game over!");
+    flashRed();
+    for (local x = 0; x < 12; x++) {
+      pixelStrip.writePixel(x, [0, 0, 0]);
+      pixelStrip.writeFrame();
     }
+    return;
+  }
 
   //server.log("currentPixel is " + currentPixel)
   for (local i = 1; i < 4; i++) { //4-1 (3) is the numer of pixels lit up
@@ -179,6 +208,7 @@ function movePlayer(d = null) {
   imp.wakeup(DELAY, movePlayer);
 }
 
+//deprecated; was for testing purposes only
 //problem: color is incorrect after pixel 6 (green instead of red)
 function setRandomPixel(d = null) {
   local randomNum = math.rand() % (NUMPIXELS);
@@ -188,38 +218,35 @@ function setRandomPixel(d = null) {
   pixelStrip.writeFrame();
 }
 
-//flashes the entire board red when the player misses
-//needs to be fixed
-function miss() {
-  const QUICK_DELAY = 0.05;
-  for (local x = 0; x < 12; x++)
-    pixelStrip.writePixel(randomNum, [10, 0, 0]);
-  pixelStrip.writeFrame();
-  imp.wakeup(QUICK_DELAY, miss);
-}
-
-
-//detects for collision when button is pressed when player hits random pixel
-function testCollision() {
- if (currentPixel == randomPixel) {
-      local state = button.read();
-      if (state == 1) {
-          timesMissed++;
-        server.log("you missed! times Missed: " + timesMissed);
-      } else {
-        // when the button is pressed
-        randomPixel=generateRandomPixel();
-        pixelStrip.writePixel(randomPixel, [20, 20, 0]);
-        score++;
-        server.log("you get a point! Score: " + score);
-      }
+//flashes the entire board red
+function flashRed() {
+  for (local x = 0; x < 12; x++) {
+    pixelStrip.writePixel(x, [10, 0, 0]);
+    pixelStrip.writeFrame();
+  }
+  imp.sleep(0.3);
+  for (local x = 0; x < 12; x++) {
+    pixelStrip.writePixel(x, [0, 0, 0]);
+    pixelStrip.writeFrame();
+  }
+  imp.sleep(0.3);
+  for (local x = 0; x < 12; x++) {
+    pixelStrip.writePixel(x, [10, 0, 0]);
+    pixelStrip.writeFrame();
+  }
+  imp.sleep(0.3);
+  for (local x = 0; x < 12; x++) {
+    pixelStrip.writePixel(x, [0, 0, 0]);
+    pixelStrip.writeFrame();
   }
 }
 
 /* MAIN STARTS HERE ---------------------------------------------------------------------------------*/
 button.configure(DIGITAL_IN_PULLUP, testCollision);
-//setRandomPixel();
 server.log("Welcome to the hardware version of Circle Stop! \n You gain a point when you press the button when the head of your player (blue) hits the yellow pixel. \nThe game ends when you have misesd 4 times.  ")
 movePlayer();
-//miss();
-//buttonPress();
+
+if (score > 0 && score % 5 == 0) {
+  DELAY = DELAY * 0.75;
+  //  server.log("level up!");
+}
