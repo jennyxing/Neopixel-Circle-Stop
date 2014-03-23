@@ -165,16 +165,6 @@ function movePlayer(d = null) {
   imp.wakeup(DELAY, movePlayer);
 }
 
-
-
-function collision() {
-  //on button press
-  pixelStrip.writePixel(randomPixel, [0, 0, 0]);
-  pixelStrip.writeFrame();
-  pixelStrip.writePixel(generateRandomPixel(), [20, 0, 0]);
-
-}
-
 //problem: color is incorrect after pixel 6 (green instead of red)
 function setRandomPixel(d = null) {
   local randomNum = math.rand() % (NUMPIXELS);
@@ -184,7 +174,41 @@ function setRandomPixel(d = null) {
   pixelStrip.writeFrame();
 }
 
+//flashes the entire board red when the player misses
+//needs to be fixed
+function miss(){
+  const QUICK_DELAY = 0.05;
+  for (local x =0; x<12; x++)
+    pixelStrip.writePixel(randomNum, [10, 0, 0]);
+  pixelStrip.writeFrame();
+  imp.wakeup(QUICK_DELAY, miss);
+}
+
+//detects for collision when button is pressed when player hits random pixel
+function collision() {
+  //on button press
+  pixelStrip.writePixel(randomPixel, [0, 0, 0]);
+  pixelStrip.writeFrame();
+  pixelStrip.writePixel(generateRandomPixel(), [20, 0, 0]);
+}
+
+button <- hardware.pin9;
+ 
+function buttonPress() {
+  local state = button.read();
+  if (state == 1) {
+    // when the button is released
+    server.log("release");
+  } else {
+    // when the button is pressed
+    server.log("press");
+  }
+ 
+}
 
 /* MAIN STARTS HERE ---------------------------------------------------------------------------------*/
-setRandomPixel();
+//setRandomPixel();
 //movePlayer();
+//miss();
+button.configure(DIGITAL_IN_PULLUP, buttonPress);
+buttonPress();
