@@ -101,14 +101,17 @@ class NeoPixels {
 /* RUNTIME STARTS HERE ---------------------------------------------------------------------------------*/
 
 const NUMPIXELS = 12;
-const DELAY = 0.3;
+local DELAY = 0.2;
 
+button <- hardware.pin9;
 spi <- hardware.spi257;
 spi.configure(MSB_FIRST, SPICLK);
 pixelStrip <- NeoPixels(spi, NUMPIXELS);
 
 pixels <- [0, 0, 0, 0]
 currentPixel <- 0;
+local score=0;
+local timesMissed=-5;
 
 function generateRandomPixel() {
   return math.rand() % (NUMPIXELS);
@@ -118,15 +121,26 @@ local randomPixel = generateRandomPixel();
 //server.log("the random pixel is " + randomPixel)
 
 function movePlayer(d = null) {
-  /*if (currentPixel == randomPixel) {
-    //server.log("")
-    collision();
+ /* if (currentPixel == randomPixel) {
+    testCollision();
   } else {
     pixelStrip.writePixel(randomPixel, [20, 20, 0]);
-  }*/
+  }
+  */
 
   pixelStrip.writePixel(randomPixel, [20, 20, 0]);
   pixelStrip.writePixel(pixels[0], [0, 0, 0]);
+
+  testCollision();
+
+//problem: goes on indefinitely :()
+  if (score> 0 && score % 5 == 0){
+    DELAY = DELAY * 0.75;
+    server.log("level up! ")
+    }
+    if (timesMissed==4){
+        server.log("game over!")
+    }
 
   //server.log("currentPixel is " + currentPixel)
   for (local i = 1; i < 4; i++) { //4-1 (3) is the numer of pixels lit up
@@ -136,7 +150,7 @@ function movePlayer(d = null) {
 
   //changes the random pixel to green if the head of the player hits it
   if (currentPixel == randomPixel) { //on button press
-    pixelStrip.writePixel(currentPixel, [0, 20, 0]);
+    pixelStrip.writePixel(currentPixel, [20, 0, 0]);
   }
 
   //changes the tail of the player to yellow when it goes over the random pixel (which is yellow)
@@ -176,39 +190,36 @@ function setRandomPixel(d = null) {
 
 //flashes the entire board red when the player misses
 //needs to be fixed
-function miss(){
+function miss() {
   const QUICK_DELAY = 0.05;
-  for (local x =0; x<12; x++)
+  for (local x = 0; x < 12; x++)
     pixelStrip.writePixel(randomNum, [10, 0, 0]);
   pixelStrip.writeFrame();
   imp.wakeup(QUICK_DELAY, miss);
 }
 
-//detects for collision when button is pressed when player hits random pixel
-function collision() {
-  //on button press
-  pixelStrip.writePixel(randomPixel, [0, 0, 0]);
-  pixelStrip.writeFrame();
-  pixelStrip.writePixel(generateRandomPixel(), [20, 0, 0]);
-}
 
-button <- hardware.pin9;
- 
-function buttonPress() {
-  local state = button.read();
-  if (state == 1) {
-    // when the button is released
-    server.log("release");
-  } else {
-    // when the button is pressed
-    server.log("press");
+//detects for collision when button is pressed when player hits random pixel
+function testCollision() {
+ if (currentPixel == randomPixel) {
+      local state = button.read();
+      if (state == 1) {
+          timesMissed++;
+        server.log("you missed! times Missed: " + timesMissed);
+      } else {
+        // when the button is pressed
+        randomPixel=generateRandomPixel();
+        pixelStrip.writePixel(randomPixel, [20, 20, 0]);
+        score++;
+        server.log("you get a point! Score: " + score);
+      }
   }
- 
 }
 
 /* MAIN STARTS HERE ---------------------------------------------------------------------------------*/
+button.configure(DIGITAL_IN_PULLUP, testCollision);
 //setRandomPixel();
-//movePlayer();
+server.log("Welcome to the hardware version of Circle Stop! \n You gain a point when you press the button when the head of your player (blue) hits the yellow pixel. \nThe game ends when you have misesd 4 times.  ")
+movePlayer();
 //miss();
-button.configure(DIGITAL_IN_PULLUP, buttonPress);
-buttonPress();
+//buttonPress();
