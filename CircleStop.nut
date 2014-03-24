@@ -139,13 +139,14 @@ function testCollision() {
   }
 
 }
+
 function movePlayer(d = null) {
 
   //doesn't work properly, but flashes the pixels when the player reaches 5 points which is a good animation for winning
-  if (score > 0 && score % 5 == 0) {
-    DELAY = DELAY * 0.9;
+  /*if (score > 0 && score % 5 == 0) {
+    DELAY = DELAY * 0.7;
     //  server.log("level up!");
-  }
+  }*/
 
   local state = button.read();
 
@@ -218,7 +219,7 @@ function setRandomPixel(d = null) {
   pixelStrip.writeFrame();
 }
 
-//flashes the entire board red
+//flashes the entire board red twice
 function flashRed() {
   for (local x = 0; x < 12; x++) {
     pixelStrip.writePixel(x, [10, 0, 0]);
@@ -243,10 +244,12 @@ function flashRed() {
 
 /* MAIN STARTS HERE ---------------------------------------------------------------------------------*/
 button.configure(DIGITAL_IN_PULLUP, testCollision);
-server.log("Welcome to the hardware version of Circle Stop! \n You gain a point when you press the button when the head of your player (blue) hits the yellow pixel. \nThe game ends when you have misesd 4 times.  ")
+server.log("Welcome to the hardware version of Circle Stop!");
+server.log("You gain a point when you press the button when the head of your player (blue) hits the yellow pixel.");
+server.log("The game ends when you have misesd 4 times.");
 movePlayer();
 
-if (score > 0 && score % 5 == 0) {
+if (score == 3) {
   DELAY = DELAY * 0.75;
   //  server.log("level up!");
 }
